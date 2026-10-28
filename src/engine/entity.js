@@ -1,6 +1,7 @@
 // Entity: alles, was auf der Map existiert (Charakter, Gegner, Münze, Truhe, ...).
 // Eine Entity hat selbst kein Verhalten – sie bekommt es über austauschbare Verhaltens-Bausteine.
 import { createBehavior, runHook } from './instance.js';
+import { getImage } from './assets.js';
 
 let nextId = 1;
 
@@ -19,6 +20,8 @@ export class Entity {
     this.solid = solid;
     this.appearance = { shape: 'rect', color: '#fff', layer: 0, ...appearance };
     this.visible = true;
+    this.facing = 1; // 1 = rechts, -1 = links (für appearance.flip)
+    this.moving = false;
     this.props = structuredClone(props); // freie Daten: hp, score, path, ...
     this.spawn = { x, y };
     this.removed = false;
@@ -67,7 +70,9 @@ export class Entity {
     const startY = this.y;
     if (dx && !world.isBlocked({ x: this.x + dx, y: this.y, size: this.size }, this)) this.x += dx;
     if (dy && !world.isBlocked({ x: this.x, y: this.y + dy, size: this.size }, this)) this.y += dy;
-    return this.x !== startX || this.y !== startY;
+    if (dx) this.facing = Math.sign(dx);
+    this.moving = this.x !== startX || this.y !== startY;
+    return this.moving;
   }
 
   distanceTo(other) {
@@ -83,18 +88,38 @@ export class Entity {
     this.y = this.spawn.y;
   }
 
-  draw(ctx) {
+  // appearance.sprite: Bild oder waagerechter Streifen aus `frames` Einzelbildern, abgespielt mit `fps`.
+  // spriteSize: Zeichengröße (Standard = size), flip: bei Bewegung nach links spiegeln,
+  // animate: 'always' (Standard) oder 'moving' (nur beim Laufen)
+  draw(ctx, time = 0) {
     if (!this.visible) return;
-    const { shape, color } = this.appearance;
-    ctx.fillStyle = color;
-    if (shape === 'circle') {
+    const { shape, color, sprite, frames = 1, fps = 6, spriteSize = this.size, flip, animate = 'always' } = this.appearance;
+    const image = getImage(sprite);
+    if (image) {
+      const frameWidth = image.width / frames;
+      const playing = animate === 'always' || this.moving;
+      const frame = playing ? Math.floor(time * fps) % frames : 0;
+      const dx = this.centerX - spriteSize / 2;
+      const dy = this.centerY - spriteSize / 2;
+      ctx.save();
+      if (flip && this.facing < 0) {
+        ctx.translate(dx + spriteSize, dy);
+        ctx.scale(-1, 1);
+      } else {
+        ctx.translate(dx, dy);
+      }
+      ctx.drawImage(image, frame * frameWidth, 0, frameWidth, image.height, 0, 0, spriteSize, spriteSize);
+      ctx.restore();
+    } else if (shape === 'circle') {
+      ctx.fillStyle = color;
       const r = this.size / 2;
       ctx.beginPath();
       ctx.arc(this.centerX, this.centerY, r, 0, Math.PI * 2);
       ctx.fill();
     } else {
+      ctx.fillStyle = color;
       ctx.fillRect(this.x, this.y, this.size, this.size);
     }
-    this.callHook('draw', { ctx });
+    this.callHook('draw', { ctx, time });
   }
 }

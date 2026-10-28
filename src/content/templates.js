@@ -1,5 +1,7 @@
 // Vorlagen für Entities. Eine Vorlage kann eine andere erweitern (extends):
 // tags und behaviors werden angehängt, props und appearance zusammengeführt.
+// appearance.sprite: Grafik (oder Streifen aus `frames` Bildern nebeneinander, abgespielt mit `fps`).
+// Ohne Grafik wird `color`/`shape` gezeichnet – so kann man erst spielen und später malen.
 const enemy = {
   tags: ['enemy'],
   size: 22,
@@ -11,7 +13,10 @@ export default {
   hero: {
     tags: ['player'],
     size: 24,
-    appearance: { color: '#ffeb3b', layer: 2 },
+    appearance: {
+      color: '#ffeb3b', layer: 2,
+      sprite: 'assets/characters/hero.png', frames: 2, fps: 8, spriteSize: 32, flip: true, animate: 'moving',
+    },
     props: { score: 0 },
     behaviors: [
       { type: 'keyboardMove', speed: 150 },
@@ -23,7 +28,7 @@ export default {
   coin: {
     tags: ['coin', 'item'],
     size: 12,
-    appearance: { shape: 'circle', color: '#ffd600' },
+    appearance: { shape: 'circle', color: '#ffd600', sprite: 'assets/characters/coin.png', frames: 2, fps: 3, spriteSize: 24 },
     behaviors: [{ type: 'collectible', by: 'player', give: { score: 10 } }],
   },
   chest: { tags: ['obstacle'], solid: true, size: 26, appearance: { color: '#8d6e63' } },
@@ -55,7 +60,7 @@ export default {
   // Läuft umher und jagt den Spieler, sobald er nah genug ist.
   ghost: {
     extends: 'enemy',
-    appearance: { color: '#e57373', layer: 1 },
+    appearance: { color: '#e57373', layer: 1, sprite: 'assets/characters/ghost.png', frames: 2, fps: 4, spriteSize: 30, flip: true },
     behaviors: [{
       type: 'stateMachine',
       states: {
@@ -64,7 +69,7 @@ export default {
           transitions: [{ to: 'hunt', when: { type: 'nearTarget', target: 'player', range: 160 } }],
         },
         hunt: {
-          appearance: { color: '#ff1744' },
+          appearance: { color: '#ff1744', sprite: 'assets/characters/ghost-hunt.png' },
           behaviors: [{ type: 'chase', target: 'player', speed: 85 }],
           transitions: [{ to: 'roam', when: { type: 'farFromTarget', target: 'player', range: 220 } }],
         },

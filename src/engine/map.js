@@ -1,21 +1,27 @@
 // Map: Kachel-Raster aus Level-Daten. Kacheltypen kommen aus dem Kachel-Register.
 import { tiles } from './registry.js';
+import { getImage } from './assets.js';
 
 export class GameMap {
-  // config: { tileSize, legend, layout }
-  // layout: Array von Textzeilen ODER Funktion (tx, ty) => Zeichen (dann mit width/height)
-  constructor({ tileSize = 32, legend, layout, width, height }) {
+  // config: { tileSize, legend, layout, background }
+  // layout: Zeilen (Text oder Arrays von Schlüsseln, z. B. Farbcodes aus einem Map-Bild)
+  //         ODER Funktion (tx, ty) => Schlüssel (dann mit width/height)
+  // background: optionales Bild, das statt der Kacheln gezeichnet wird (Kacheln gelten weiter für Kollision)
+  constructor({ tileSize = 32, legend, layout, width, height, background }) {
     this.tileSize = tileSize;
+    this.background = background;
     const rows = typeof layout === 'function'
-      ? Array.from({ length: height }, (_, ty) => Array.from({ length: width }, (_, tx) => layout(tx, ty)).join(''))
+      ? Array.from({ length: height }, (_, ty) => Array.from({ length: width }, (_, tx) => layout(tx, ty)))
       : layout;
+    // Farbcodes ohne Rücksicht auf Groß-/Kleinschreibung
+    const lookup = Object.fromEntries(Object.entries(legend).map(([key, entry]) => [key.startsWith('#') ? key.toLowerCase() : key, entry]));
 
     this.grid = [];
     this.markers = []; // Spawn-Marker, die direkt im Layout stehen
     rows.forEach((row, ty) => {
-      this.grid[ty] = [...row].map((char, tx) => {
-        const entry = legend[char];
-        if (!entry) throw new Error(`Zeichen "${char}" (Spalte ${tx}, Zeile ${ty}) fehlt in der Legende`);
+      this.grid[ty] = [...row].map((key, tx) => {
+        const entry = lookup[key.startsWith('#') ? key.toLowerCase() : key];
+        if (!entry) throw new Error(`"${key}" (Spalte ${tx}, Zeile ${ty}) fehlt in der Legende`);
         const { tile, spawn } = typeof entry === 'string' ? { tile: entry } : entry;
         if (spawn) this.markers.push({ ...(typeof spawn === 'string' ? { template: spawn } : spawn), x: tx, y: ty });
         tiles.get(tile); // früh prüfen, ob der Kacheltyp existiert
@@ -65,11 +71,19 @@ export class GameMap {
 
   draw(ctx) {
     const ts = this.tileSize;
+    const background = getImage(this.background);
+    if (background) {
+      ctx.drawImage(background, 0, 0, this.pixelWidth, this.pixelHeight);
+      return;
+    }
     for (let ty = 0; ty < this.height; ty++) {
       for (let tx = 0; tx < this.width; tx++) {
         const tile = this.tileAt(tx, ty);
+        const sprite = getImage(tile.sprite);
         if (tile.draw) {
           tile.draw(ctx, tx * ts, ty * ts, ts);
+        } else if (sprite) {
+          ctx.drawImage(sprite, tx * ts, ty * ts, ts, ts);
         } else {
           ctx.fillStyle = tile.color ?? '#000';
           ctx.fillRect(tx * ts, ty * ts, ts, ts);

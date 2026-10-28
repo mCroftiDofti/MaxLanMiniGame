@@ -31,6 +31,7 @@ src/
     world.js           Spawnen aus Vorlagen, Suche, Kollisionen, Systeme, Timer
     events.js          Ereignis-Bus
     input.js           Tasten → frei benennbare Aktionen
+    assets.js          Bilder laden, Map-Bilder Pixel für Pixel auslesen
     game.js            Level laden, Game-Loop
   content/             Spielspezifischer Inhalt (austauschbar)
     tiles.js           Kacheltypen
@@ -39,7 +40,9 @@ src/
     conditions.js      Bedingungen für Zustandswechsel
     systems.js         Spielregeln (HUD, Sieg, Niederlage)
     index.js           registriert alles
-  levels/level1.js     Ein Level als reine Beschreibung
+  levels/level1.js     Ein Level als reine Beschreibung (Map als Pixelbild)
+  levels/level-text.js Dasselbe Level mit Text-Layout
+assets/                Eigene Grafiken: maps/, tiles/, characters/
   main.js              Inhalte registrieren, Level laden, starten
 ```
 
@@ -72,6 +75,28 @@ map: {
 - **Kacheltypen** (`content/tiles.js`) haben `solid` und `color` – und **beliebige weitere Eigenschaften**, die Verhalten auslesen können. Beispiel: `sand: { speedFactor: 0.5 }` halbiert die Geschwindigkeit. Eigene Optik: `draw(ctx, x, y, size)`.
 - **Zur Laufzeit ändern**: `world.map.setTile(x, y, 'floor')` (Tür öffnen, Brücke bauen, Wand zerstören).
 
+### Map als Pixelbild
+
+Statt Textzeilen kann die Map als **Bild** gezeichnet werden: **1 Pixel = 1 Kachel**, die Legende ordnet **Farben** zu.
+
+```js
+map: {
+  tileSize: 32,
+  image: 'assets/maps/level1.png',     // 20 × 15 Pixel → 20 × 15 Kacheln
+  legend: {
+    '#000000': 'wall',
+    '#00ff00': 'floor',
+    '#ff0000': { tile: 'floor', spawn: { template: 'hero', name: 'hero' } },
+    '#ff00ff': { tile: 'floor', spawn: 'ghost' },
+  },
+  background: 'assets/maps/level1-hintergrund.png', // optional: komplett gemaltes Bild statt Kachelgrafiken
+}
+```
+
+- Ohne `background` wird jede Kachel mit ihrer Grafik (`sprite` im Kacheltyp) gezeichnet, ohne Grafik mit ihrer Farbe.
+- Mit `background` wird ein frei gemaltes Bild über die ganze Map gelegt; das Pixelbild bestimmt dann nur noch, wo man laufen kann und wer wo startet. Am einfachsten malt man das Hintergrundbild in `Breite × tileSize` (z. B. 640 × 480).
+- Farbzuordnung, Tipps und Programme: [assets/README.md](assets/README.md). Das Text-Layout funktioniert weiterhin (`src/levels/level-text.js`).
+
 ## 2. Entities & Vorlagen (Charakter, Gegner, Objekte)
 
 Eine Vorlage beschreibt eine Entity-Art:
@@ -89,6 +114,21 @@ hero: {
   ],
 }
 ```
+
+**Grafiken** für Entities stehen in `appearance`:
+
+```js
+appearance: {
+  sprite: 'assets/characters/hero.png', // Bild, oder Einzelbilder nebeneinander (Sprite-Streifen)
+  frames: 2, fps: 8,                    // Animation
+  animate: 'moving',                    // 'always' (Standard) oder nur beim Laufen
+  spriteSize: 32,                       // Zeichengröße in Pixeln (Kollisionsgröße bleibt `size`)
+  flip: true,                           // beim Laufen nach links spiegeln
+  color: '#ffeb3b',                     // Ersatz, solange es (noch) keine Grafik gibt
+}
+```
+
+Zustände einer Zustandsmaschine können eine andere Grafik setzen (`appearance: { sprite: '...' }`), z. B. der wütende Geist beim Jagen.
 
 **Vererbung** mit `extends`: `tags` und `behaviors` werden angehängt, `props` und `appearance` zusammengeführt, der Rest überschrieben.
 
@@ -215,8 +255,9 @@ Wer kein Ziel braucht, lässt `rules` einfach leer – dann ist es eine freie Sa
 ## Ablauf
 
 ```
-Game.load(level)
+Game.load(level)  (asynchron)
   ├─ level-eigene Bausteine registrieren (optional)
+  ├─ Map-Bild auslesen (falls `image`), alle Grafiken vorladen
   ├─ Map aus Legende + Layout bauen, Spawn-Marker sammeln
   ├─ Entities spawnen (Marker + spawns) → Vorlage auflösen → Verhalten init
   └─ Systeme (rules) anlegen
@@ -230,6 +271,19 @@ jeden Frame:
     └─ fällige Timer (world.after)
   world.draw(ctx): Map → Entities (nach layer) → Systeme
 ```
+
+## Eigene Grafiken auf GitHub hochladen
+
+1. Bild als PNG zeichnen (siehe [assets/README.md](assets/README.md)).
+2. Auf GitHub im Repository in den passenden Ordner gehen, z. B. `assets/characters`.
+3. **Add file → Upload files**, Datei hineinziehen, **Commit changes**.
+   - Gleicher Dateiname wie eine vorhandene Datei → die alte Grafik wird ersetzt, sonst ist nichts zu tun.
+   - Neuer Dateiname → in der Vorlage (`src/content/templates.js`) bzw. im Level den Pfad eintragen, z. B. `sprite: 'assets/characters/drache.png'`.
+4. Neue Farben in einem Map-Bild → in der `legend` des Levels ergänzen.
+
+Fehlt ein Bild oder ist der Pfad falsch, läuft das Spiel trotzdem weiter: Es zeichnet dann die Farbe und meldet den Pfad als Warnung in der Browser-Konsole.
+
+**Online spielen (optional):** Unter *Settings → Pages* den Branch auswählen; GitHub Pages stellt das Spiel dann unter einer eigenen Adresse bereit, ganz ohne lokalen Server.
 
 ## Ein anderes Spiel daraus machen – Beispiele
 
@@ -255,7 +309,7 @@ Dann `http://localhost:8000` öffnen.
 
 ## Mögliche nächste Schritte (Kern)
 
-- Sprites/Animationen (`appearance.sprite`) statt Rechtecken
+- Mehrere Animationen pro Charakter (laufen, stehen, angreifen) aus einem Sprite-Sheet mit Zeilen
 - Kamera/Scrolling für große Maps
 - Pathfinding (A*) als Baustein, damit `chase` um Wände herumläuft
 - Level/Vorlagen als JSON-Dateien laden, später ein einfacher Map-Editor

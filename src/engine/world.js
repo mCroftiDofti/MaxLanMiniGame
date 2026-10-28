@@ -83,7 +83,10 @@ export class World {
 
   update(dt) {
     this.time += dt;
-    this.entities.forEach((e) => !e.removed && e.callHook('update', { world: this, dt }));
+    this.entities.forEach((e) => {
+      e.moving = false;
+      if (!e.removed) e.callHook('update', { world: this, dt });
+    });
 
     // Kollisionen: jedes überlappende Paar bekommt onCollide (beide Seiten) + Ereignis
     const active = this.entities.filter((e) => !e.removed);
@@ -110,7 +113,7 @@ export class World {
     this.map.draw(ctx);
     [...this.entities]
       .sort((a, b) => a.appearance.layer - b.appearance.layer)
-      .forEach((e) => e.draw(ctx));
+      .forEach((e) => e.draw(ctx, this.time));
     runHook(this.systems, 'draw', { world: this, ctx });
   }
 }

@@ -4,36 +4,23 @@ export default {
 
   map: {
     tileSize: 32,
-    // Legende: Zeichen → Kachel, optional mit Spawn (Vorlagenname oder { template, ...überschreibungen })
+    // Die Map ist ein Pixelbild: 1 Pixel = 1 Kachel (hier 20 × 15 Pixel).
+    image: 'assets/maps/level1.png',
+    // Legende: Pixelfarbe → Kachel, optional mit Spawn (Vorlagenname oder { template, ...überschreibungen })
     legend: {
-      '#': 'wall',
-      '.': 'floor',
-      '~': 'water',
-      '_': 'sand',
-      'P': { tile: 'floor', spawn: { template: 'hero', name: 'hero' } },
-      'c': { tile: 'floor', spawn: 'coin' },
-      'C': { tile: 'floor', spawn: 'chest' },
-      'T': { tile: 'floor', spawn: 'tree' },
-      'g': { tile: 'floor', spawn: 'ghost' },
-      'b': { tile: 'floor', spawn: 'bat' },
+      '#000000': 'wall',
+      '#00ff00': 'floor',
+      '#0000ff': 'water',
+      '#ffff00': 'sand',
+      '#ff0000': { tile: 'floor', spawn: { template: 'hero', name: 'hero' } },
+      '#ff9900': { tile: 'floor', spawn: 'coin' },
+      '#8b4513': { tile: 'floor', spawn: 'chest' },
+      '#006400': { tile: 'floor', spawn: 'tree' },
+      '#ff00ff': { tile: 'floor', spawn: 'ghost' },
+      '#00ffff': { tile: 'floor', spawn: 'bat' },
     },
-    layout: [
-      '####################',
-      '#..........#.....c.#',
-      '#.P......C.#.......#',
-      '#...~~.....#...T...#',
-      '#...~~.............#',
-      '#........___.......#',
-      '#######..#####..####',
-      '#.......___........#',
-      '#.c.....c.......b..#',
-      '#....#.......~~~...#',
-      '#....#.......~~~...#',
-      '#....#....g........#',
-      '#..T.#..........c..#',
-      '#..................#',
-      '####################',
-    ],
+    // Optional: komplett gemaltes Hintergrundbild statt Kachel-Grafiken (Kollision kommt weiter aus `image`)
+    // background: 'assets/maps/level1-hintergrund.png',
   },
 
   // Zusätzliche Spawns mit Kachelposition und individuellen Überschreibungen
