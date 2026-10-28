@@ -1,8 +1,9 @@
 # MaxLan MiniGame
 
-Grundgerüst für ein 2D-Top-Down-Minispiel in reinem JavaScript (Canvas, ES-Module).
+Dynamisches Grundgerüst für ein 2D-Minispiel in reinem JavaScript (Canvas, ES-Module):
+Map aus Daten, Entities aus Vorlagen und austauschbares, zur Laufzeit veränderbares Verhalten.
 
 Starten: `python3 -m http.server 8000` im Projektordner, dann `http://localhost:8000` öffnen.
-Steuerung: Pfeiltasten oder WASD.
+Steuerung im Beispiel-Level: Pfeiltasten oder WASD.
 
-Aufbau und Erweiterung sind in [KONZEPT.md](KONZEPT.md) beschrieben.
+Aufbau, Datenformate und Erweiterung: [KONZEPT.md](KONZEPT.md).

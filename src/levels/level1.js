@@ -1,48 +1,53 @@
-// Level-Daten: reine Daten, keine Logik.
-// Alle Positionen sind in Kachel-Koordinaten (Spalte x, Zeile y) angegeben.
-export const level1 = {
-  tileSize: 32,
+// Ein Level ist reine Beschreibung: Map, wer wo startet und welche Regeln gelten.
+export default {
+  name: 'Level 1',
 
-  // Legende: # = Wand, . = Boden, ~ = Wasser (siehe TILES in map.js)
-  layout: [
-    '####################',
-    '#..........#.......#',
-    '#..........#.......#',
-    '#...~~.....#.......#',
-    '#...~~.............#',
-    '#..................#',
-    '#######..#####..####',
-    '#..................#',
-    '#..................#',
-    '#....#.......~~~...#',
-    '#....#.......~~~...#',
-    '#....#.............#',
-    '#....#.............#',
-    '#..................#',
-    '####################',
-  ],
-
-  // Objekte, die auf der Map platziert werden (siehe OBJECT_TYPES in objects.js)
-  objects: [
-    { type: 'chest', x: 9, y: 2 },
-    { type: 'tree', x: 15, y: 4 },
-    { type: 'tree', x: 3, y: 12 },
-    { type: 'coin', x: 17, y: 2 },
-    { type: 'coin', x: 8, y: 8 },
-    { type: 'coin', x: 16, y: 12 },
-    { type: 'coin', x: 2, y: 8 },
-  ],
-
-  // Spawn-Punkt des Charakters
-  playerSpawn: { x: 2, y: 2 },
-
-  // Spawn-Punkte der Gegner inkl. Grundverhalten (siehe BEHAVIORS in enemy.js)
-  enemySpawns: [
-    {
-      type: 'slime', x: 13, y: 1, behavior: 'patrol',
-      path: [{ x: 13, y: 1 }, { x: 18, y: 1 }, { x: 18, y: 4 }, { x: 13, y: 4 }],
+  map: {
+    tileSize: 32,
+    // Legende: Zeichen → Kachel, optional mit Spawn (Vorlagenname oder { template, ...überschreibungen })
+    legend: {
+      '#': 'wall',
+      '.': 'floor',
+      '~': 'water',
+      '_': 'sand',
+      'P': { tile: 'floor', spawn: { template: 'hero', name: 'hero' } },
+      'c': { tile: 'floor', spawn: 'coin' },
+      'C': { tile: 'floor', spawn: 'chest' },
+      'T': { tile: 'floor', spawn: 'tree' },
+      'g': { tile: 'floor', spawn: 'ghost' },
+      'b': { tile: 'floor', spawn: 'bat' },
     },
-    { type: 'ghost', x: 10, y: 11, behavior: 'wander' },
-    { type: 'bat', x: 16, y: 8, behavior: 'wander' },
+    layout: [
+      '####################',
+      '#..........#.....c.#',
+      '#.P......C.#.......#',
+      '#...~~.....#...T...#',
+      '#...~~.............#',
+      '#........___.......#',
+      '#######..#####..####',
+      '#.......___........#',
+      '#.c.....c.......b..#',
+      '#....#.......~~~...#',
+      '#....#.......~~~...#',
+      '#....#....g........#',
+      '#..T.#..........c..#',
+      '#..................#',
+      '####################',
+    ],
+  },
+
+  // Zusätzliche Spawns mit Kachelposition und individuellen Überschreibungen
+  spawns: [
+    { template: 'slime', x: 13, y: 1, props: { path: [{ x: 13, y: 1 }, { x: 18, y: 1 }, { x: 18, y: 4 }, { x: 13, y: 4 }] } },
   ],
+
+  // Spielregeln (Systeme)
+  rules: [
+    { type: 'hud', lines: [{ label: 'HP', of: 'player', prop: 'hp' }, { label: 'Punkte', of: 'player', prop: 'score' }] },
+    { type: 'restartOn', event: 'died', message: 'Game Over' },
+    { type: 'clearAll', tag: 'coin', message: 'Gewonnen!' },
+  ],
+
+  // Optional: level-eigene Bausteine (ergänzen/überschreiben die globalen)
+  // tiles: {}, templates: {}, behaviors: {}, conditions: {}, systems: {},
 };
